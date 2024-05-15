@@ -35,7 +35,7 @@ void delayMs(int n);
 /*Semaphores*/
 SemaphoreHandle_t xJamAutoSemaphore;
 SemaphoreHandle_t xJamPressedSemaphore;
-xSemaphoreHandle xMutex;
+//xSemaphoreHandle xMutex;
 
 
 // Define task handles
@@ -62,17 +62,20 @@ void delayMs(int n){
 void motorForward() {
     // Set motor control pins for forward motion 1 0
     GPIO_PORTA_DATA_R = (GPIO_PORTA_DATA_R & ~MOTOR_PIN_2) | MOTOR_PIN_1;
+		GPIOF->DATA = 0x02;
 }
 
 void motorReverse() {
     // Set motor control pins for reverse motion 0 1
     GPIO_PORTA_DATA_R = (GPIO_PORTA_DATA_R & ~MOTOR_PIN_1) | MOTOR_PIN_2;
+	 GPIOF->DATA = 0x04;
 }
 
 void motorOFF()
 {
 			//Set The control Pins both to 0
 	    GPIO_PORTA_DATA_R &= ~(MOTOR_PIN_1 | MOTOR_PIN_2);
+	 GPIOF->DATA = 0x08;
 
 }
 
@@ -82,19 +85,18 @@ void ManualControlTask(void* parameters) {
 	portBASE_TYPE xStatus;
     while (1) {
 if ((GPIO_PORTB_DATA_R & 0x01) == 0x01) {   //auto + manual up PB0  driverrr
-		vTaskDelay(pdMS_TO_TICKS(4000));
-   // delayMs(500);
-			 GPIOF->DATA ^= 0x02;
-
+		vTaskDelay(pdMS_TO_TICKS(2000));
+			 //GPIOF->DATA ^= 0x02;
     if ((GPIO_PORTB_DATA_R & 0x01) == 0x01) {
         while ((GPIO_PORTB_DATA_R & 0x01) == 0x01) { 
             xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_Forward}, 0);
+						//xSemaphoreTake(xMutex, portMAX_DELAY); // Take the mutex in case of Manual 
             if ((GPIO_PORTB_DATA_R & 0x01) != 0x01) {
                 xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_OFF}, 0);
+								  //xSemaphoreGive(xMutex); // Release the mutex
                 break;
             }
         }
-        
     }
 		else {
             xSemaphoreGive(xJamAutoSemaphore);
@@ -103,13 +105,14 @@ if ((GPIO_PORTB_DATA_R & 0x01) == 0x01) {   //auto + manual up PB0  driverrr
 }
 
 if ((GPIO_PORTB_DATA_R & 0x02) == 0x02) {   //auto + manual down PB1  driverrr
-	vTaskDelay(pdMS_TO_TICKS(4000));
-    //delayMs(100000000);
+	vTaskDelay(pdMS_TO_TICKS(2000));
     if ((GPIO_PORTB_DATA_R & 0x02) == 0x02) {
         while ((GPIO_PORTB_DATA_R & 0x02) == 0x02) { 
             xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_Backward}, 0);
+						//xSemaphoreTake(xMutex, portMAX_DELAY); // Take the mutex in case of Manual 
             if ((GPIO_PORTB_DATA_R & 0x02) != 0x02) {
                 xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_OFF}, 0);
+								//xSemaphoreGive(xMutex); // Release the mutex
                 break;
             }
         }
@@ -122,15 +125,15 @@ if ((GPIO_PORTB_DATA_R & 0x02) == 0x02) {   //auto + manual down PB1  driverrr
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 				
-				if(((GPIO_PORTB_DATA_R & 0x10)==0x10) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){  //pb4(jam) and PA6 off/on
-									vTaskDelay(pdMS_TO_TICKS(4000));
-
-//						delayMs(500);
+if(((GPIO_PORTB_DATA_R & 0x10)==0x10) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){  //pb4(jam) and PA6 off/on
+				vTaskDelay(pdMS_TO_TICKS(2000));
 				if(((GPIO_PORTB_DATA_R & 0x10)==0x10) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){
 					while (((GPIO_PORTB_DATA_R & 0x10) == 0x10) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){
 							xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_Forward},0);
+							//xSemaphoreTake(xMutex, portMAX_DELAY); // Take the mutex in case of Manual 
 						if((GPIO_PORTB_DATA_R & 0x10)!=0x10){ 
 							xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_OFF},0);
+							//xSemaphoreGive(xMutex); // Release the mutex
 							break;
 					}
 									}
@@ -141,57 +144,26 @@ if ((GPIO_PORTB_DATA_R & 0x02) == 0x02) {   //auto + manual down PB1  driverrr
 				}
 	}
 //////////////////////////////////////////////////////////////////////////
-			if(((GPIO_PORTB_DATA_R & 0x20)==0x20) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){  //pb4(jam) and PA6 off/on
-				vTaskDelay(pdMS_TO_TICKS(4000));
-				GPIOF->DATA ^= 0x04;
-
-//						delayMs(500);
+if(((GPIO_PORTB_DATA_R & 0x20)==0x20) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){  //pb4(jam) and PA6 off/on
+				vTaskDelay(pdMS_TO_TICKS(2000));
+				//GPIOF->DATA ^= 0x04;
 				if(((GPIO_PORTB_DATA_R & 0x20)==0x20) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){
 					while (((GPIO_PORTB_DATA_R & 0x20) == 0x20) && ((GPIO_PORTA_DATA_R & 0x40) != 0x40)){
-							xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_Forward},0);
+							xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_Backward},0);
+							//xSemaphoreTake(xMutex, portMAX_DELAY); // Take the mutex in case of Manual 
 						if((GPIO_PORTB_DATA_R & 0x20)!=0x20){ 
 							xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_OFF},0);
+							//xSemaphoreGive(xMutex); // Release the mutex
 							break;
 					}
 									}
 		}
 				else{
 					xSemaphoreGive(xJamAutoSemaphore);
-					xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_Forward},0);
+					xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Motor_Backward},0);
 				}
 	}
 			//////////////////////////////////////////////////////////////////////////////
-	/*if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
-            // Check if PB4 and PB0 are pressed together
-            if (((GPIO_PORTB_DATA_R & 0x10) == 0x10) && ((GPIO_PORTB_DATA_R & 0x01) == 0x01)) {
-                // Release mutex
-                xSemaphoreGive(xMutex);
-                // Execute the code for PB4 and PB0 pressed together
-                // ...
-                vTaskDelay(pdMS_TO_TICKS(4000));
-                if (((GPIO_PORTB_DATA_R & 0x10) == 0x10) && ((GPIO_PORTB_DATA_R & 0x01) == 0x01)) {
-                    while (((GPIO_PORTB_DATA_R & 0x10) == 0x10) && ((GPIO_PORTB_DATA_R & 0x01) == 0x01)) {
-                        xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_Forward}, 0);
-                        if (((GPIO_PORTB_DATA_R & 0x10) != 0x10) || ((GPIO_PORTB_DATA_R & 0x01) != 0x01)) {
-                            xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_OFF}, 0);
-                            break;
-                        }
-                    }
-                } else {
-                    xSemaphoreGive(xJamAutoSemaphore);
-                    xStatus = xQueueSendToBack(xMotorQueue, &(uint32_t){Motor_Forward}, 0);
-                }
-            } else {
-                // Release mutex
-                xSemaphoreGive(xMutex);
-                // Execute the rest of the code
-                // ...
-                // Your existing code for handling other cases
-            }
-        } else {
-            // Failed to take mutex, handle error
-            // ...
-        }*/
         vTaskDelay(pdMS_TO_TICKS(10)); // debounce switch
     }
 }
@@ -206,7 +178,7 @@ void JammerTask(void *pvParameters){
 	{
 			xSemaphoreTake(xJamAutoSemaphore,portMAX_DELAY);
 		  xSemaphoreTake(xJamPressedSemaphore,portMAX_DELAY);
-			xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){0},0);
+			xStatus=xQueueSendToBack(xMotorQueue,&(uint32_t){Jam_mode},0);
 	}
 }
 /*-----------MotorController-------*/
@@ -220,8 +192,6 @@ void MotorControlTask(void *pvParameters){
 		case Jam_mode :
 			motorOFF();
 				vTaskDelay(pdMS_TO_TICKS(4000));
-
-			//delayMs(1000);
 			motorReverse();   	//Jamm Mode Motor stops then move backwards
 			vTaskDelay(pdMS_TO_TICKS(4000));
 
@@ -252,9 +222,9 @@ int main( void )
 	xMotorQueue=xQueueCreate(20,sizeof(uint32_t));	
 	xJamAutoSemaphore = xSemaphoreCreateBinary();
 	xJamPressedSemaphore = xSemaphoreCreateBinary();
-	xMutex = xSemaphoreCreateMutex();
+	//xMutex = xSemaphoreCreateMutex();
 	__ASM("CPSIE i");
-	if( (xJamAutoSemaphore && xJamPressedSemaphore && xMotorQueue && xMutex) != NULL )
+	if( (xJamAutoSemaphore && xJamPressedSemaphore && xMotorQueue ) != NULL )
 		{
 			
 			xTaskCreate(ManualControlTask, "Switch Task", configMINIMAL_STACK_SIZE, NULL, 1, switchTaskHandle);
@@ -275,7 +245,7 @@ void GPIOF_Handler(void){  	//Port-F handler
 	 if(GPIO_PORTF_MIS_R & (1 << 0)){
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
   xSemaphoreGiveFromISR(xJamPressedSemaphore,&xHigherPriorityTaskWoken);
-	GPIOF->DATA ^= 0x08;
+	//GPIOF->DATA ^= 0x08;
 	GPIOF->ICR = 0xff;       				 										// clear the interrupt flag of PORTF 
 	portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
   }
@@ -285,13 +255,13 @@ void GPIOF_Handler(void){  	//Port-F handler
 void GPIOD_Handler(void){
 /*--------------------------Limit Switch up Button--------------------*/
 	 if(GPIO_PORTD_MIS_R & (1 << 0)){
-		 GPIOF->DATA ^= 0x08;
+		 //GPIOF->DATA ^= 0x08;
 		 GPIOD->ICR = 0xff;  
       xQueueSendFromISR(xMotorQueue,&(uint32_t){Motor_OFF},0);	
   }
 /*----------------------------Limit Switch down Button-------------------*/
 	 if (GPIO_PORTD_MIS_R & (1 << 1)){
-		 GPIOF->DATA ^= 0x02;
+		 //GPIOF->DATA ^= 0x02;
 		 GPIOD->ICR = 0xff;  
 			xQueueSendFromISR(xMotorQueue,&(uint32_t){Motor_OFF},0);	
  }
